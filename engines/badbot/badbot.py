@@ -2,7 +2,6 @@ from lib.engine_wrapper import MinimalEngine
 import lib.lichess_types as lichess_types
 from typing import override
 import chess
-import random
 import math
 
 
@@ -11,25 +10,37 @@ class BadBot(MinimalEngine):
     def search(self, board: chess.Board, time_limit: chess.engine.Limit,
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
+        depth = 4
+        move = self.get_move(board, depth)
 
-        depth = 2
-        score_best = float('-inf')
-        move_best = None
+        return chess.engine.PlayResult(move, None)
 
-        for move in board.legal_moves:
-            board.push(move)
-            score = self.minimax(board, depth - 1,
-                                 float('-inf'), float('inf'), False)
-            board.pop()
+    def get_move(self, board, depth):
+        top_move = None
+        # Opposite of our minimax
+        if board.turn == chess.WHITE:
+            top_eval = -math.inf
+        else:
+            top_eval = math.inf
 
-            if score > score_best:
-                score_best = score
-                move_best = move
+            for move in board.legal_moves:
+                board.push(move)
+                # WHEN WE ARE BLACK, WE WANT TRUE AND TO GRAB THE SMALLEST VALUE
+                eval = self.minimax(board, depth - 1, -math.inf, math.inf, board.turn)
 
-                if move_best is None:
-                    move_best = move = random.choice(list(board.legal_moves))
+                board.pop()
 
-            return chess.engine.PlayResult(move_best, None)
+                if board.turn == chess.WHITE:
+                    if eval > top_eval:
+                        top_move = move
+                        top_eval = eval
+                    else:
+                        if eval < top_eval:
+                            top_move = move
+                            top_eval = eval
+
+                            print("CHOSEN MOVE: ", top_move, "WITH EVAL: ", top_eval)
+                            return top_move
 
     def evaluate(self, board: chess.Board) -> float:
         pass
@@ -60,4 +71,4 @@ class BadBot(MinimalEngine):
                 beta = min(beta, eval)
                 if beta <= alpha:
                     break
-        return min_eval
+            return min_eval
