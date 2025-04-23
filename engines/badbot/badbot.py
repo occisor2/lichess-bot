@@ -12,29 +12,30 @@ class BadBot(MinimalEngine):
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
 
-                   depth = 2
-                   score_best = float('-inf')
-                   move_best = None
+        depth = 2
+        score_best = float('-inf')
+        move_best = None
 
-                   for move in board.legal_moves:
-                       board.push(move)
-                       score = self.minimax(board, depth -1, float('-inf'), float('inf'), False)
-                       board.pop()
+        for move in board.legal_moves:
+            board.push(move)
+            score = self.minimax(board, depth - 1,
+                                 float('-inf'), float('inf'), False)
+            board.pop()
 
-                       if score > score_best:
-                           score_best = score
-                           move_best = move
+            if score > score_best:
+                score_best = score
+                move_best = move
 
-                   if move_best is None:
-                       move_best = move = random.choice(list(board.legal_moves))
-                   
-                   return chess.engine.PlayResult(move_best, None)
+                if move_best is None:
+                    move_best = move = random.choice(list(board.legal_moves))
+
+            return chess.engine.PlayResult(move_best, None)
 
     def evaluate(self, board: chess.Board) -> float:
         pass
 
-    def minimax(self, board: chess.Board, depth: int, alpha: float, beta: float,
-                maxing_player: bool) -> float:
+    def minimax(self, board: chess.Board, depth: int, alpha: float,
+                beta: float, maxing_player: bool) -> float:
         if depth == 0 or board.is_game_over():
             pass
 
