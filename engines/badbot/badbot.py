@@ -39,11 +39,11 @@ class BadBot(MinimalEngine):
                             top_move = move
                             top_eval = eval
 
-                            print("CHOSEN MOVE: ", top_move, "WITH EVAL: ", top_eval)
+                            print("CHOSEN MOVE: ", top_move, "WITH EVAL: ",
+                                  top_eval)
                             return top_move
 
     def evaluate(self, board: chess.Board) -> float:
-
         piece_values = {
             chess.PAWN: 1,
             chess.KNIGHT: 3,
@@ -53,20 +53,19 @@ class BadBot(MinimalEngine):
         }
 
         score = 0
-        
+
         if board.is_checkmate():
             if board.turn:
                 return float('-inf')
             else:
                 return float('inf')
 
-
-        #adds a miteral value to the amount of pieces on the board, ie if the opponent has less pieces of a higher value, 
-        #return a higher score.
+        # Adds a miteral value to the amount of pieces on the board, ie if the
+        # opponent has less pieces of a higher value, return a higher score.
         for piece_type, value in piece_values.item():
             score += len(board.pieces(piece_type, chess.WHITE)) * value
             score -= len(board.pieces(piece_type, chess.BLACK)) * value
-            
+
         if board.turn == chess.WHITE:
             return score
         else:
