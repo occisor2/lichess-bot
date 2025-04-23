@@ -11,8 +11,24 @@ class BadBot(MinimalEngine):
     def search(self, board: chess.Board, time_limit: chess.engine.Limit,
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
-        move = random.choice(list(board.legal_moves))
-        return chess.engine.PlayResult(move, None)
+
+                   depth = 2
+                   score_best = float('-inf')
+                   move_best = None
+
+                   for move in board.legal_moves:
+                       board.push(move)
+                       score = self.minimax(board, depth -1, float('-inf'), float('inf'), False)
+                       board.pop()
+
+                       if score > score_best:
+                           score_best = score
+                           move_best = move
+
+                   if move_best is None:
+                       move_best = move = random.choice(list(board.legal_moves))
+                   
+                   return chess.engine.PlayResult(move_best, None)
 
     def evaluate(self, board: chess.Board) -> float:
         pass
