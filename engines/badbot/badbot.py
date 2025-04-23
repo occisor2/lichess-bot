@@ -3,6 +3,7 @@ import lib.lichess_types as lichess_types
 from typing import override
 import chess
 import random
+import math
 
 
 class BadBot(MinimalEngine):
@@ -13,9 +14,33 @@ class BadBot(MinimalEngine):
         move = random.choice(list(board.legal_moves))
         return chess.engine.PlayResult(move, None)
 
-    def evaluate(board: chess.Board) -> float:
+    def evaluate(self, board: chess.Board) -> float:
         pass
 
-    def minimax(board: chess.Board, depth: int, alpha: float, beta: float,
-                maxing_player) -> float:
-        pass
+    def minimax(self, board: chess.Board, depth: int, alpha: float, beta: float,
+                maxing_player: bool) -> float:
+        if depth == 0 or board.is_game_over():
+            pass
+
+        if maxing_player:
+            max_eval = -math.inf
+        for move in board.legal_moves:
+            board.push(move)
+            eval = self.minimax(board, depth - 1, alpha, beta, False)
+            board.pop()
+            max_eval = max(max_eval, eval)
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break
+            return max_eval
+        else:
+            min_eval = math.inf
+            for move in board.legal_moves:
+                board.push(move)
+                eval = self.minimax(board, depth - 1, alpha, beta, True)
+                board.pop()
+                min_eval = min(min_eval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
+        return min_eval
