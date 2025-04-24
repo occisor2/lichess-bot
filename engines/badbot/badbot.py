@@ -4,6 +4,7 @@ from typing import override
 import chess
 import math
 import random
+from . import piece_tables
 
 
 class BadBot(MinimalEngine):
@@ -18,14 +19,22 @@ class BadBot(MinimalEngine):
         return chess.engine.PlayResult(move, None)
 
     def evaluate(self, board: chess.Board) -> float:
-        """Evaluate the board using a material score"""
+        """
+        Evaluate the board.
+
+        The evaluation function must always return a score from the
+        perspective of the player. If the player is white, scoring a
+        white turn should returna high value, while scoringa black
+        turn should return a low value.
+        """
         piece_values = {
             chess.PAWN: 1,
             chess.KNIGHT: 3,
             chess.BISHOP: 3,
-            chess.ROOK: 5,
+            chess.ROOK: 6,
             chess.QUEEN: 9,
         }
+        color = 1 if board.turn == chess.WHITE else -1
         score = 0
 
         if board.is_checkmate():
@@ -37,7 +46,10 @@ class BadBot(MinimalEngine):
             white_material += len(board.pieces(piece_type, chess.WHITE)) * value
             black_material += len(board.pieces(piece_type, chess.BLACK)) * value
 
-        score = (white_material - black_material)
+        material = (white_material - black_material) * color
+        position = piece_tables.evaluate(board) * color
+
+        score = material + position
 
         return score
 
@@ -45,9 +57,8 @@ class BadBot(MinimalEngine):
         """Alpha-Beta Pruning minimax implementation using a negamax
         variant"""
         def minimax(board: chess.Board, depth: int, alpha: float,
-                    beta: float, maxing_player: bool) -> float:
+                    beta: float, turn) -> float:
             if depth == 0 or board.is_game_over():
-                turn = 1 if maxing_player else -1
                 return self.evaluate(board) * turn
 
             moves = board.legal_moves
@@ -56,7 +67,7 @@ class BadBot(MinimalEngine):
             for move in moves:
                 board.push(move)  # update the board to this move
                 value = max(value, -minimax(board, depth - 1, -beta,
-                                            -alpha, not maxing_player))
+                                            -alpha, -turn))
                 board.pop()  # restore board to previous move
                 alpha = max(alpha, value)
                 if alpha >= beta:
@@ -64,13 +75,11 @@ class BadBot(MinimalEngine):
 
             return value
 
-        print('MOVES')
         moves = []
         for move in board.legal_moves:
             board.push(move)
-            score = minimax(board, depth - 1, -math.inf, math.inf, False)
+            score = minimax(board, depth - 1, -math.inf, math.inf, 1)
             board.pop()
-            print(f'move: "{move}", score: {score}')
             moves.append((move, score))
 
         # Choose randomly among best or worst moves if they are tied
@@ -78,7 +87,5 @@ class BadBot(MinimalEngine):
             if depth % 2 == 0 else min(moves, key=lambda m: m[1])[1]
         best_moves = [m[0] for m in moves if m[1] == best_score]
         best = random.choice(best_moves)
-
-        print(f'BEST: {best}, {best_score}')
 
         return best
