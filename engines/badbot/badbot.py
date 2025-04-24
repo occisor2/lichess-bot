@@ -12,7 +12,7 @@ class BadBot(MinimalEngine):
     def search(self, board: chess.Board, time_limit: chess.engine.Limit,
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
-        depth = 6
+        depth = 3
         move = self.minimax(board, depth)
 
         return chess.engine.PlayResult(move, None)
@@ -44,8 +44,6 @@ class BadBot(MinimalEngine):
     def minimax(self, board: chess.Board, depth: int) -> chess.Move:
         """Alpha-Beta Pruning minimax implementation using a negamax
         variant"""
-        assert depth % 2 == 0  # make sure depth is even
-
         def minimax(board: chess.Board, depth: int, alpha: float,
                     beta: float, maxing_player: bool) -> float:
             if depth == 0 or board.is_game_over():
@@ -66,6 +64,7 @@ class BadBot(MinimalEngine):
 
             return value
 
+        print('MOVES')
         moves = []
         for move in board.legal_moves:
             board.push(move)
@@ -74,9 +73,12 @@ class BadBot(MinimalEngine):
             print(f'move: "{move}", score: {score}')
             moves.append((move, score))
 
-        # Choose randomly among best moves if they are tied
-        best_score = max(moves, key=lambda m: m[1])[1]
+        # Choose randomly among best or worst moves if they are tied
+        best_score = max(moves, key=lambda m: m[1])[1] \
+            if depth % 2 == 0 else min(moves, key=lambda m: m[1])[1]
         best_moves = [m[0] for m in moves if m[1] == best_score]
         best = random.choice(best_moves)
+
+        print(f'BEST: {best}, {best_score}')
 
         return best
