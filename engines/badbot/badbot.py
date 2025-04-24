@@ -3,46 +3,22 @@ import lib.lichess_types as lichess_types
 from typing import override
 import chess
 import math
+import random
 
 
 class BadBot(MinimalEngine):
+    """simple and bad chess bot"""
     @override
     def search(self, board: chess.Board, time_limit: chess.engine.Limit,
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
-        depth = 3
-        move = self.get_move(board, depth)
+        depth = 6
+        move = self.minimax(board, depth)
 
         return chess.engine.PlayResult(move, None)
 
-    def get_move(self, board, depth):
-        top_move = None
-        # Opposite of our minimax
-        if board.turn == chess.WHITE:
-            top_eval = -math.inf
-        else:
-            top_eval = math.inf
-
-        for move in board.legal_moves:
-            board.push(move)
-            # WHEN WE ARE BLACK, WE WANT TRUE AND TO GRAB THE SMALLEST VALUE
-            eval = self.minimax(board, depth - 1, -math.inf, math.inf, board.turn)
-
-            board.pop()
-
-            if board.turn == chess.WHITE:
-                if eval > top_eval:
-                    top_move = move
-                    top_eval = eval
-            else:
-                if eval < top_eval:
-                    top_move = move
-                    top_eval = eval
-
-        print("CHOSEN MOVE: ", top_move, "WITH EVAL: ", top_eval)
-        return top_move
-
     def evaluate(self, board: chess.Board) -> float:
+        """Evaluate the board using a material score"""
         piece_values = {
             chess.PAWN: 1,
             chess.KNIGHT: 3,
@@ -50,50 +26,57 @@ class BadBot(MinimalEngine):
             chess.ROOK: 5,
             chess.QUEEN: 9,
         }
-
         score = 0
 
         if board.is_checkmate():
-            if board.turn:
-                return float('-inf')
-            else:
-                return float('inf')
+            return math.inf
 
-        # Adds a material value to the amount of pieces on the board, ie if the
-        # opponent has less pieces of a higher value, return a higher score.
+        white_material = 0
+        black_material = 0
         for piece_type, value in piece_values.items():
-            score += len(board.pieces(piece_type, chess.WHITE)) * value
-            score -= len(board.pieces(piece_type, chess.BLACK)) * value
+            white_material += len(board.pieces(piece_type, chess.WHITE)) * value
+            black_material += len(board.pieces(piece_type, chess.BLACK)) * value
 
-        if board.turn == chess.WHITE:
-            return score
-        else:
-            return -score
+        score = (white_material - black_material)
 
-    def minimax(self, board: chess.Board, depth: int, alpha: float,
-                beta: float, maxing_player: bool) -> float:
-        if depth == 0 or board.is_game_over():
-            return self.evaluate(board)
+        return score
 
-        if maxing_player:
-            max_eval = -math.inf
-            for move in board.legal_moves:
-                board.push(move)
-                eval = self.minimax(board, depth - 1, alpha, beta, False)
-                board.pop()
-                max_eval = max(max_eval, eval)
-                alpha = max(alpha, eval)
-                if beta <= alpha:
+    def minimax(self, board: chess.Board, depth: int) -> chess.Move:
+        """Alpha-Beta Pruning minimax implementation using a negamax
+        variant"""
+        assert depth % 2 == 0  # make sure depth is even
+
+        def minimax(board: chess.Board, depth: int, alpha: float,
+                    beta: float, maxing_player: bool) -> float:
+            if depth == 0 or board.is_game_over():
+                turn = 1 if maxing_player else -1
+                return self.evaluate(board) * turn
+
+            moves = board.legal_moves
+            value = -math.inf
+
+            for move in moves:
+                board.push(move)  # update the board to this move
+                value = max(value, -minimax(board, depth - 1, -beta,
+                                            -alpha, not maxing_player))
+                board.pop()  # restore board to previous move
+                alpha = max(alpha, value)
+                if alpha >= beta:
                     break
-            return max_eval
-        else:
-            min_eval = math.inf
-            for move in board.legal_moves:
-                board.push(move)
-                eval = self.minimax(board, depth - 1, alpha, beta, True)
-                board.pop()
-                min_eval = min(min_eval, eval)
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break
-            return min_eval
+
+            return value
+
+        moves = []
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, -math.inf, math.inf, False)
+            board.pop()
+            print(f'move: "{move}", score: {score}')
+            moves.append((move, score))
+
+        # Choose randomly among best moves if they are tied
+        best_score = max(moves, key=lambda m: m[1])[1]
+        best_moves = [m[0] for m in moves if m[1] == best_score]
+        best = random.choice(best_moves)
+
+        return best
