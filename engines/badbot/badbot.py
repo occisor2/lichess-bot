@@ -10,7 +10,7 @@ class BadBot(MinimalEngine):
     def search(self, board: chess.Board, time_limit: chess.engine.Limit,
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
-        depth = 4
+        depth = 1
         move = self.get_move(board, depth)
 
         return chess.engine.PlayResult(move, None)
@@ -23,25 +23,26 @@ class BadBot(MinimalEngine):
         else:
             top_eval = math.inf
 
-            for move in board.legal_moves:
-                board.push(move)
-                # WHEN WE ARE BLACK, WE WANT TRUE AND TO GRAB THE SMALLEST VALUE
-                eval = self.minimax(board, depth - 1, -math.inf, math.inf, board.turn)
+        for move in board.legal_moves:
+            board.push(move)
+            # WHEN WE ARE BLACK, WE WANT TRUE AND TO GRAB THE SMALLEST VALUE
+            eval = self.minimax(board, depth - 1, -math.inf, math.inf, board.turn)
 
-                board.pop()
+            board.pop()
 
-                if board.turn == chess.WHITE:
-                    if eval > top_eval:
-                        top_move = move
-                        top_eval = eval
-                    else:
-                        if eval < top_eval:
-                            top_move = move
-                            top_eval = eval
+            if board.turn == chess.WHITE:
+                if eval > top_eval:
+                    top_move = move
+                    top_eval = eval
+            else:
+                if eval < top_eval:
+                    top_move = move
+                    top_eval = eval
 
-                            print("CHOSEN MOVE: ", top_move, "WITH EVAL: ",
-                                  top_eval)
-                            return top_move
+        print("CHOSEN MOVE: ", top_move, "WITH EVAL: ",
+              top_eval)
+
+        return top_move
 
     def evaluate(self, board: chess.Board) -> float:
         piece_values = {
@@ -60,9 +61,9 @@ class BadBot(MinimalEngine):
             else:
                 return float('inf')
 
-        # Adds a miteral value to the amount of pieces on the board, ie if the
+        # Adds a material value to the amount of pieces on the board, ie if the
         # opponent has less pieces of a higher value, return a higher score.
-        for piece_type, value in piece_values.item():
+        for piece_type, value in piece_values.items():
             score += len(board.pieces(piece_type, chess.WHITE)) * value
             score -= len(board.pieces(piece_type, chess.BLACK)) * value
 
@@ -74,7 +75,7 @@ class BadBot(MinimalEngine):
     def minimax(self, board: chess.Board, depth: int, alpha: float,
                 beta: float, maxing_player: bool) -> float:
         if depth == 0 or board.is_game_over():
-            pass
+            return self.evaluate(board)
 
         if maxing_player:
             max_eval = -math.inf
