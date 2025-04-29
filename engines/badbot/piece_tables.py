@@ -97,6 +97,4 @@ def evaluate(board: chess.Board) -> float:
     black = black_pawns + black_kights + black_bishops + \
         black_rooks + black_queen + black_king
 
-    print(f'position score {white - black}')
-
     return white - black

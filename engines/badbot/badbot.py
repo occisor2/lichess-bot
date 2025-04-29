@@ -4,6 +4,7 @@ from typing import override
 import chess
 import math
 import random
+import time
 from . import piece_tables
 
 
@@ -14,18 +15,24 @@ class BadBot(MinimalEngine):
                ponder: bool, draw_offered: bool,
                root_moves: lichess_types.MOVE) -> chess.engine.PlayResult:
         depth = 3
+
+        self.nodes_searched = 0
+        self.cut_nodes = 0
+
+        start = time.perf_counter_ns()
         move = self.minimax(board, depth)
+        stop = time.perf_counter_ns()
+
+        t = round((stop - start)/1000000)
+        print(f'Search Time: {t}ms')
+        print(f'Nodes searched: {self.nodes_searched}')
+        print(f'Nodes cut: {self.cut_nodes}')
 
         return chess.engine.PlayResult(move, None)
 
     def evaluate(self, board: chess.Board) -> float:
         """
         Evaluate the board.
-
-        The evaluation function must always return a score from the
-        perspective of the player. If the player is white, scoring a
-        white turn should returna high value, while scoringa black
-        turn should return a low value.
         """
         piece_values = {
             chess.PAWN: 1,
@@ -42,6 +49,7 @@ class BadBot(MinimalEngine):
 
         white_material = 0
         black_material = 0
+        material = 0
         for piece_type, value in piece_values.items():
             white_material += len(board.pieces(piece_type, chess.WHITE)) * value
             black_material += len(board.pieces(piece_type, chess.BLACK)) * value
@@ -70,7 +78,9 @@ class BadBot(MinimalEngine):
                                             -alpha, -turn))
                 board.pop()  # restore board to previous move
                 alpha = max(alpha, value)
+                self.nodes_searched += 1
                 if alpha >= beta:
+                    self.cut_nodes += 1
                     break
 
             return value
